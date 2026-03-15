@@ -149,18 +149,15 @@
     function clean(text) {
       if (!text) return '';
 
-      // Find the most common non-standard character replacing spaces
-      // Termius often substitutes spaces with U+FFFD or other chars
+      // Find non-standard characters that Termius uses instead of spaces
       const counts = {};
       for (const ch of text) {
         const code = ch.codePointAt(0);
-        // Skip normal printable ASCII and common unicode
         if (code >= 32 && code <= 126) continue;
         if (ch === '\n' || ch === '\r' || ch === '\t') continue;
         counts[ch] = (counts[ch] || 0) + 1;
       }
 
-      // Sort by frequency, pick the top offender
       const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
 
       let result = text;
@@ -168,8 +165,12 @@
         result = result.replaceAll(ch, ' ');
       }
 
-      // Collapse multiple spaces into one
-      result = result.replace(/ {2,}/g, ' ');
+      // Collapse multiple consecutive spaces into one, preserving leading indentation per line
+      result = result.split('\n').map(line => {
+        const leading = line.match(/^ */)[0];
+        const rest = line.slice(leading.length).replace(/ {2,}/g, ' ');
+        return leading + rest;
+      }).join('\n');
 
       return result;
     }
@@ -185,7 +186,6 @@
       }
     });
 
-    // Also handle paste event for instant response
     input.addEventListener('paste', () => {
       setTimeout(() => {
         const cleaned = clean(input.value);
@@ -202,7 +202,6 @@
       try {
         await navigator.clipboard.writeText(text);
       } catch {
-        // Fallback for Safari
         const range = document.createRange();
         range.selectNode(output);
         window.getSelection().removeAllRanges();
@@ -215,7 +214,7 @@
 
     function clearAll() {
       input.value = '';
-      output.textContent = 'Tu pojawi się oczyszczony tekst...';
+      output.textContent = 'Cleaned text will appear here...';
       output.classList.add('empty');
     }
 
