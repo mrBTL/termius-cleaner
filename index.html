@@ -131,16 +131,16 @@
 
   <h1>Text Cleaner</h1>
 
-  <div class="label">Wklej tekst z Terminusa</div>
-  <textarea id="input" placeholder="Wklej tutaj..."></textarea>
+  <div class="label">Paste text from Termius</div>
+  <textarea id="input" placeholder="Paste here..."></textarea>
 
-  <div class="label">Wynik</div>
-  <div id="output" class="output empty">Tu pojawi się oczyszczony tekst...</div>
+  <div class="label">Result</div>
+  <div id="output" class="output empty">Cleaned text will appear here...</div>
 
-  <button class="btn btn-copy" onclick="copyText()">Kopiuj</button>
-  <button class="btn btn-clear" onclick="clearAll()">Wyczysc</button>
+  <button class="btn btn-copy" onclick="copyText()">Copy</button>
+  <button class="btn btn-clear" onclick="clearAll()">Clear</button>
 
-  <div class="toast" id="toast">Skopiowano!</div>
+  <div class="toast" id="toast">Copied!</div>
 
   <script>
     const input = document.getElementById('input');
@@ -180,7 +180,7 @@
         output.textContent = cleaned;
         output.classList.remove('empty');
       } else {
-        output.textContent = 'Tu pojawi się oczyszczony tekst...';
+        output.textContent = 'Cleaned text will appear here...';
         output.classList.add('empty');
       }
     });
