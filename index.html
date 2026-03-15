@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Text Cleaner">
+  <title>Text Cleaner</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, sans-serif;
+      background: #1c1c1e;
+      color: #f2f2f7;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      padding: 20px 16px;
+      padding-top: max(20px, env(safe-area-inset-top));
+      padding-bottom: max(20px, env(safe-area-inset-bottom));
+      gap: 12px;
+    }
+
+    h1 {
+      font-size: 18px;
+      font-weight: 600;
+      color: #f2f2f7;
+    }
+
+    textarea {
+      flex: 1;
+      width: 100%;
+      min-height: 200px;
+      background: #2c2c2e;
+      color: #f2f2f7;
+      border: 1px solid #3a3a3c;
+      border-radius: 12px;
+      padding: 14px;
+      font-size: 15px;
+      line-height: 1.5;
+      resize: none;
+      outline: none;
+      font-family: inherit;
+    }
+
+    textarea:focus {
+      border-color: #0a84ff;
+    }
+
+    textarea::placeholder {
+      color: #636366;
+    }
+
+    .output {
+      background: #2c2c2e;
+      border: 1px solid #3a3a3c;
+      border-radius: 12px;
+      padding: 14px;
+      font-size: 15px;
+      line-height: 1.5;
+      min-height: 200px;
+      flex: 1;
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: #f2f2f7;
+    }
+
+    .output.empty {
+      color: #636366;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 16px;
+      border-radius: 12px;
+      border: none;
+      font-size: 17px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+
+    .btn:active { opacity: 0.7; }
+
+    .btn-copy {
+      background: #0a84ff;
+      color: white;
+    }
+
+    .btn-clear {
+      background: #3a3a3c;
+      color: #ebebf5;
+      font-size: 15px;
+      padding: 12px;
+    }
+
+    .label {
+      font-size: 12px;
+      color: #8e8e93;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding-left: 4px;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: #30d158;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 20px;
+      font-size: 15px;
+      font-weight: 600;
+      opacity: 0;
+      transition: all 0.2s;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Text Cleaner</h1>
+
+  <div class="label">Wklej tekst z Terminusa</div>
+  <textarea id="input" placeholder="Wklej tutaj..."></textarea>
+
+  <div class="label">Wynik</div>
+  <div id="output" class="output empty">Tu pojawi się oczyszczony tekst...</div>
+
+  <button class="btn btn-copy" onclick="copyText()">Kopiuj</button>
+  <button class="btn btn-clear" onclick="clearAll()">Wyczysc</button>
+
+  <div class="toast" id="toast">Skopiowano!</div>
+
+  <script>
+    const input = document.getElementById('input');
+    const output = document.getElementById('output');
+
+    function clean(text) {
+      if (!text) return '';
+
+      // Find the most common non-standard character replacing spaces
+      // Termius often substitutes spaces with U+FFFD or other chars
+      const counts = {};
+      for (const ch of text) {
+        const code = ch.codePointAt(0);
+        // Skip normal printable ASCII and common unicode
+        if (code >= 32 && code <= 126) continue;
+        if (ch === '\n' || ch === '\r' || ch === '\t') continue;
+        counts[ch] = (counts[ch] || 0) + 1;
+      }
+
+      // Sort by frequency, pick the top offender
+      const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+
+      let result = text;
+      for (const [ch] of sorted) {
+        result = result.replaceAll(ch, ' ');
+      }
+
+      // Collapse multiple spaces into one
+      result = result.replace(/ {2,}/g, ' ');
+
+      return result;
+    }
+
+    input.addEventListener('input', () => {
+      const cleaned = clean(input.value);
+      if (cleaned) {
+        output.textContent = cleaned;
+        output.classList.remove('empty');
+      } else {
+        output.textContent = 'Tu pojawi się oczyszczony tekst...';
+        output.classList.add('empty');
+      }
+    });
+
+    // Also handle paste event for instant response
+    input.addEventListener('paste', () => {
+      setTimeout(() => {
+        const cleaned = clean(input.value);
+        if (cleaned) {
+          output.textContent = cleaned;
+          output.classList.remove('empty');
+        }
+      }, 0);
+    });
+
+    async function copyText() {
+      const text = output.textContent;
+      if (!text || output.classList.contains('empty')) return;
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch {
+        // Fallback for Safari
+        const range = document.createRange();
+        range.selectNode(output);
+        window.getSelection().removeAllRanges();
+        window.getSelection().addRange(range);
+        document.execCommand('copy');
+        window.getSelection().removeAllRanges();
+      }
+      showToast();
+    }
+
+    function clearAll() {
+      input.value = '';
+      output.textContent = 'Tu pojawi się oczyszczony tekst...';
+      output.classList.add('empty');
+    }
+
+    function showToast() {
+      const toast = document.getElementById('toast');
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+  </script>
+</body>
+</html>
