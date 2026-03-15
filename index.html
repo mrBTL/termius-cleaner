@@ -165,12 +165,8 @@
         result = result.replaceAll(ch, ' ');
       }
 
-      // Collapse multiple consecutive spaces into one, preserving leading indentation per line
-      result = result.split('\n').map(line => {
-        const leading = line.match(/^ */)[0];
-        const rest = line.slice(leading.length).replace(/ {2,}/g, ' ');
-        return leading + rest;
-      }).join('\n');
+      // Trim each line (Termius-added leading/trailing spaces are artifacts) and collapse internal spaces
+      result = result.split('\n').map(line => line.trim().replace(/ {2,}/g, ' ')).join('\n');
 
       return result;
     }
